@@ -1,0 +1,96 @@
+package com.app.controller;
+
+import com.app.util.XfaFlattener;
+import com.app.entity.User;
+import com.app.repository.UserRepository;
+import com.app.util.FillAcroForm;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.File;
+import java.util.Optional;
+@CrossOrigin("*")
+@RestController
+@RequestMapping("/api/pdf")
+public class PdfController {
+	@Autowired
+    private UserRepository userRepository; // Assuming userRepository is injected
+
+    @PostMapping("/flatten-xfa")
+    public ResponseEntity<String> flattenXfa() {
+        XfaFlattener.flattenXfaForm();
+        return ResponseEntity.ok("XFA form flattened into a static PDF.");
+    }
+
+    @PostMapping("/fill")
+    public ResponseEntity<String> fillPdf() {
+        FillAcroForm.fillPdfWithDummyData();
+        return ResponseEntity.ok("PDF successfully filled and saved!");
+    }
+
+    @GetMapping("/download")
+    public ResponseEntity<FileSystemResource> downloadPdf() {
+        File file = new File("D:\\java xfa\\cit_filled.pdf");
+        if (!file.exists()) return ResponseEntity.notFound().build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"cit_filled.pdf\"")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(new FileSystemResource(file));
+    }
+    
+    @GetMapping("/fill-form")
+    public ResponseEntity<FileSystemResource> fillAndDownload(@RequestParam(defaultValue = "false") boolean fill) {
+        if (fill) {
+            FillAcroForm.fillPdfWithDummyData(); // Fill the form with dummy data
+        }
+
+        File file = new File("D:\\java xfa\\cit_filled.pdf");
+        if (!file.exists()) return ResponseEntity.notFound().build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"cit_filled.pdf\"")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(new FileSystemResource(file));
+    }
+    
+    @CrossOrigin("*") // Already applied at class level — good
+    @PostMapping("/fill-upload")
+    public ResponseEntity<FileSystemResource> uploadAndFillPdf(@RequestParam("file") MultipartFile multipartFile) {
+        try {
+        	String siteID="ram@gmail.com";
+        	 Optional<User> user = userRepository.findByEmail(siteID);
+             System.out.println(user);
+            // 1. Save uploaded file to temporary location
+            File tempInputFile = new File("D:\\java xfa\\uploaded_input.pdf");
+            multipartFile.transferTo(tempInputFile);
+
+            // 2. Set file paths for processing
+            String outputPath = "D:\\java xfa\\uploaded_filled.pdf";
+
+            // 3. Fill PDF with dummy data
+            FillAcroForm.fillPdfWithDummyData(tempInputFile.getAbsolutePath(), outputPath);
+
+            // 4. Return filled PDF as a download
+            File resultFile = new File(outputPath);
+            if (!resultFile.exists()) return ResponseEntity.notFound().build();
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"filled_uploaded.pdf\"")
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body(new FileSystemResource(resultFile));
+
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                    .body(null);
+        }
+    }
+
+
+}

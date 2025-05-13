@@ -1,0 +1,64 @@
+package com.app.controller;
+
+import com.app.util.XfaFlattener;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import com.app.util.FillAcroForm;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.File;
+import java.util.Optional;
+@CrossOrigin("*")
+@RestController
+@RequestMapping("/api/pdf")
+public class PdfController {
+
+    @PostMapping("/fill-upload")
+    public ResponseEntity<?> uploadAndFillPdf(
+            @RequestParam(value = "file", required = false) MultipartFile multipartFile,
+            @RequestParam(value = "clientData1", required = false) String clientData1Json
+    ) {
+        try {
+            // ✅ Validate inputs
+            if (multipartFile == null || multipartFile.isEmpty()) {
+                return ResponseEntity.badRequest().body("PDF file is missing or empty.");
+            }
+
+            if (clientData1Json == null || clientData1Json.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Client data is missing.");
+            }
+
+            System.out.println("Received clientData1: " + clientData1Json);
+
+            // ✅ Save the input PDF
+            File tempInputFile = new File("D:\\java xfa\\uploaded_input.pdf");
+            multipartFile.transferTo(tempInputFile);
+
+            // ✅ Fill the PDF with client data
+            String outputPath = "D:\\java xfa\\uploaded_filled.pdf";
+            FillAcroForm.fillPdfWithDummyData(tempInputFile.getAbsolutePath(), outputPath, clientData1Json);
+
+            // ✅ Return the filled PDF as a download
+            File resultFile = new File(outputPath);
+            if (!resultFile.exists()) {
+                return ResponseEntity.status(500).body("Filled PDF was not generated.");
+            }
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"filled_uploaded.pdf\"")
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body(new FileSystemResource(resultFile));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Error processing PDF: " + e.getMessage());
+        }
+    }
+}

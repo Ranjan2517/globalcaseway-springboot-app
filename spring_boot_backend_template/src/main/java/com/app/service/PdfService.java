@@ -1,0 +1,87 @@
+package com.app.service;
+import com.itextpdf.kernel.pdf.*;
+
+import com.itextpdf.forms.PdfAcroForm;
+import com.itextpdf.forms.fields.PdfFormField;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Map;
+
+@Service
+public class PdfService {
+
+    private static final String PDF_DIRECTORY = "D:\\java xfa\\"; // Change this path
+    private static final String INPUT_PDF = PDF_DIRECTORY + "cit.pdf";
+    private static final String OUTPUT_PDF = PDF_DIRECTORY + "cit_filled.pdf";
+    
+    
+    /**
+     * Extracts empty fields from the PDF, fills them with dummy data, and saves the new PDF.
+     */
+    public String fillPdfWithDummyData() {
+        File file = new File(INPUT_PDF);
+        if (!file.exists()) {
+            System.out.println("File not found: " + INPUT_PDF);
+            return "Error: PDF file not found!";
+        }
+
+        try (PdfReader reader = new PdfReader(INPUT_PDF, new ReaderProperties().setPassword("".getBytes())); // ✅ Try blank password
+             PdfWriter writer = new PdfWriter(OUTPUT_PDF);
+             PdfDocument pdfDoc = new PdfDocument(reader, writer)) {
+
+            PdfAcroForm acroForm = PdfAcroForm.getAcroForm(pdfDoc, true);
+            if (acroForm == null) {
+                System.out.println("No form fields found in PDF.");
+                return "Error: No form fields found!";
+            }
+            acroForm.setGenerateAppearance(false);
+
+
+            Map<String, PdfFormField> fields = acroForm.getFormFields();
+
+            System.out.println("Filling PDF Fields...");
+            for (Map.Entry<String, PdfFormField> entry : fields.entrySet()) {
+                String fieldName = entry.getKey();
+                PdfFormField field = entry.getValue();
+
+                // Check if the field is empty before filling
+                if (field.getValueAsString().isEmpty()) {
+                    String dummyValue = "Sample-" + fieldName.substring(fieldName.lastIndexOf('.') + 1);
+                    field.setValue(dummyValue);
+                    System.out.println("Filled: " + fieldName + " → " + dummyValue);
+                }
+            }
+
+            pdfDoc.close();
+            System.out.println("PDF filled and saved: " + OUTPUT_PDF);
+            return "PDF successfully filled and saved!";
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return "Error filling PDF: " + e.getMessage();
+        }
+    }
+
+    /**
+     * Provides the filled PDF file for download.
+     */
+    public ResponseEntity<FileSystemResource> downloadFilledPdf() {
+        File file = new File(OUTPUT_PDF);
+        if (!file.exists()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getName() + "\"")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(new FileSystemResource(file));
+    }
+}

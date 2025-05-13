@@ -1,0 +1,107 @@
+package com.app.controller;
+
+import com.app.util.XfaFlattener;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.app.entity.User;
+import com.app.repository.UserRepository;
+import com.app.util.FillAcroForm;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.File;
+import java.util.Optional;
+@CrossOrigin("*")
+@RestController
+@RequestMapping("/api/pdf")
+public class PdfController {
+	@Autowired
+    private UserRepository userRepository; // Assuming userRepository is injected
+
+    @PostMapping("/flatten-xfa")
+    public ResponseEntity<String> flattenXfa() {
+        XfaFlattener.flattenXfaForm();
+        return ResponseEntity.ok("XFA form flattened into a static PDF.");
+    }
+
+    @PostMapping("/fill")
+    public ResponseEntity<String> fillPdf() {
+        FillAcroForm.fillPdfWithDummyData();
+        return ResponseEntity.ok("PDF successfully filled and saved!");
+    }
+
+    @GetMapping("/download")
+    public ResponseEntity<FileSystemResource> downloadPdf() {
+        File file = new File("D:\\java xfa\\cit_filled.pdf");
+        if (!file.exists()) return ResponseEntity.notFound().build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"cit_filled.pdf\"")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(new FileSystemResource(file));
+    }
+    
+    @GetMapping("/fill-form")
+    public ResponseEntity<FileSystemResource> fillAndDownload(@RequestParam(defaultValue = "false") boolean fill) {
+        if (fill) {
+            FillAcroForm.fillPdfWithDummyData(); // Fill the form with dummy data
+        }
+
+        File file = new File("D:\\java xfa\\cit_filled.pdf");
+        if (!file.exists()) return ResponseEntity.notFound().build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"cit_filled.pdf\"")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(new FileSystemResource(file));
+    }
+    
+    
+    @CrossOrigin("*")
+    @PostMapping("/fill-upload")
+    public ResponseEntity<FileSystemResource> uploadAndFillPdf(
+            @RequestParam("file") MultipartFile multipartFile,
+            @RequestParam("clientData1") String clientData1Json
+    ) {
+        try {
+            // ✅ Deserialize JSON into Java object
+            ObjectMapper objectMapper = new ObjectMapper();
+            ClientData clientData = objectMapper.readValue(clientData1Json, ClientData.class);
+
+            // ✅ Print some values from Java object
+            System.out.println("Client First Name: " +
+                clientData.getBasicInformation().getFormsdata().getFirstName());
+
+            System.out.println("Intended Location: " +
+                clientData.getBasicInformation().getFormsdata().getIntendedLocation());
+
+            System.out.println("Father's Occupation: " +
+                clientData.getParentDetails().getFormsdata().getFatherInfo().getOccupation());
+
+            // ✅ Save file
+            File tempInputFile = new File("D:\\java xfa\\uploaded_input.pdf");
+            multipartFile.transferTo(tempInputFile);
+
+            String outputPath = "D:\\java xfa\\uploaded_filled.pdf";
+            FillAcroForm.fillPdfWithDummyData(tempInputFile.getAbsolutePath(), outputPath);
+
+            File resultFile = new File(outputPath);
+            if (!resultFile.exists()) return ResponseEntity.notFound().build();
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"filled_uploaded.pdf\"")
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body(new FileSystemResource(resultFile));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body(null);
+        }
+    }
+
+}

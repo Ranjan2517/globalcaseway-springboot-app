@@ -1,0 +1,35 @@
+package com.app.util;
+
+import com.itextpdf.kernel.pdf.*;
+import java.io.File;
+import java.io.IOException;
+
+public class XfaFlattener {
+
+    private static final String PDF_DIRECTORY = "D:\\java xfa\\";
+    private static final String INPUT_PDF = PDF_DIRECTORY + "cit.pdf";
+    private static final String FLATTENED_PDF = PDF_DIRECTORY + "cit_flattened.pdf";
+
+    public static void flattenXfaForm() {
+        File file = new File(INPUT_PDF);
+        if (!file.exists()) {
+            System.out.println("File not found: " + INPUT_PDF);
+            return;
+        }
+
+        try (PdfReader reader = new PdfReader(INPUT_PDF);
+             PdfWriter writer = new PdfWriter(FLATTENED_PDF, new WriterProperties().setFullCompressionMode(true)); // ✅ Flatten PDF
+             PdfDocument pdfDoc = new PdfDocument(reader, writer)) {
+
+            pdfDoc.close();
+            System.out.println("Flattened PDF saved at: " + FLATTENED_PDF);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void main(String[] args) {
+        flattenXfaForm();
+    }
+}

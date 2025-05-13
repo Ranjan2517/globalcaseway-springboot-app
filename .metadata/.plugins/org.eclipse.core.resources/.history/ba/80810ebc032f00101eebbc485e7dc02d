@@ -1,0 +1,24 @@
+package com.app.pojo;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
+public class AddressFormData {
+    private String from;
+    private String to;
+    private String apt;
+    private String streetNo;
+    private String streetName;
+    private String postalCode;
+    private String city;
+    private String district;
+    private String state;
+    private String country;
+    private String _id;
+}

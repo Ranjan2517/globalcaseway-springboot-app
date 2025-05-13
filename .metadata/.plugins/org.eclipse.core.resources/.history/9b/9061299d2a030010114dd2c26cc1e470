@@ -1,0 +1,57 @@
+package com.app.util;
+
+import com.itextpdf.kernel.pdf.*;
+import com.itextpdf.forms.PdfAcroForm;
+import com.itextpdf.forms.fields.PdfFormField;
+import java.io.File;
+import java.io.IOException;
+import java.util.Map;
+
+public class FillAcroForm {
+
+    private static final String PDF_DIRECTORY = "D:\\java xfa\\";
+    private static final String INPUT_PDF = PDF_DIRECTORY + "cit_flattened.pdf";
+    private static final String OUTPUT_PDF = PDF_DIRECTORY + "cit_filled.pdf";
+
+    public static void fillPdfWithDummyData() {
+        File file = new File(INPUT_PDF);
+        if (!file.exists()) {
+            System.out.println("File not found: " + INPUT_PDF);
+            return;
+        }
+
+        try (PdfReader reader = new PdfReader(INPUT_PDF);
+             PdfWriter writer = new PdfWriter(OUTPUT_PDF);
+             PdfDocument pdfDoc = new PdfDocument(reader, writer)) {
+
+            PdfAcroForm acroForm = PdfAcroForm.getAcroForm(pdfDoc, true);
+            if (acroForm == null) {
+                System.out.println("No form fields found in PDF.");
+                return;
+            }
+
+            Map<String, PdfFormField> fields = acroForm.getFormFields();
+            System.out.println("Filling PDF Fields...");
+            for (Map.Entry<String, PdfFormField> entry : fields.entrySet()) {
+                String fieldName = entry.getKey();
+                PdfFormField field = entry.getValue();
+                
+                if (field.getValueAsString().isEmpty()) {
+                    String dummyValue = "Sample-" + fieldName.substring(fieldName.lastIndexOf('.') + 1);
+                    field.setValue(dummyValue);
+                    System.out.println("Filled: " + fieldName + " → " + dummyValue);
+                }
+            }
+
+            pdfDoc.close();
+            System.out.println("PDF filled and saved: " + OUTPUT_PDF);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void main(String[] args) {
+        fillPdfWithDummyData();
+    }
+}

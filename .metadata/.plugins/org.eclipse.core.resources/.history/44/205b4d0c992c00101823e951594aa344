@@ -1,0 +1,27 @@
+package com.app.pojo;
+
+import java.util.List;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
+public class FormsData {
+    private String firstName;
+    private String lastName;
+    private String otherNames;
+    private String intendedLocation;
+    private String gender;
+    private String dob;
+    private List<String> citizenship;
+    private String residenceCountry;
+    private String ifOtherStatus;
+    private String _id;
+
+    // Getters and Setters
+    // ... (Generate with your IDE)
+}

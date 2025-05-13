@@ -1,0 +1,18 @@
+package com.app.service;
+
+import com.mongodb.client.MongoDatabase;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.stereotype.Service;
+
+@Service
+public class MongoService {
+
+    @Autowired
+    private MongoTemplate mongoTemplate;
+
+    public void testMongoConnection() {
+        // Test the connection by fetching a sample collection or simply checking if the database exists
+        mongoTemplate.getDb().listCollectionNames().first();
+    }
+}

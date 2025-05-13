@@ -1,0 +1,23 @@
+package com.app.controller;
+
+import com.app.service.MongoService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+public class MongoDBTestController {
+
+    @Autowired
+    private MongoService mongoService;
+
+    @GetMapping("/test-mongo")
+    public String testMongoConnection() {
+        try {
+            mongoService.testMongoConnection(); // This can be modified to return a more meaningful response
+            return "MongoDB connection is successful!";
+        } catch (Exception e) {
+            return "Failed to connect to MongoDB: " + e.getMessage();
+        }
+    }
+}
