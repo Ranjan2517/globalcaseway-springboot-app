@@ -1,30 +1,26 @@
 # Step 1: Use Maven and Java 17 for building the project
-FROM maven:3.9-openjdk-17 AS builder
+FROM maven:3.8.4-openjdk-17 AS builder
 
 # Set working directory
 WORKDIR /app
 
-# Copy only the pom.xml and download dependencies
-COPY pom.xml .
-RUN mvn dependency:go-offline
+# Copy all files
+COPY . .
 
-# Copy source code
-COPY src ./src
+# Build the project and skip tests
+RUN mvn clean package -DskipTests
 
-# Build the Spring Boot app
-RUN mvn clean install -DskipTests
-
-# Step 2: Create a small final image using OpenJDK
+# Step 2: Use Java 17 to run the app
 FROM openjdk:17-jdk-slim
 
 # Set working directory
 WORKDIR /app
 
-# Copy the JAR from the builder image
+# Copy the JAR from the builder stage
 COPY --from=builder /app/target/spring_boot_backend_template-0.0.1.jar app.jar
 
 # Expose port 8080
 EXPOSE 8080
 
-# Run the app
-CMD ["java", "-jar", "app.jar"]
+# Run the application
+ENTRYPOINT ["java", "-jar", "app.jar"]
